@@ -142,6 +142,36 @@ final class UserConfigTests: XCTestCase {
     XCTAssertEqual(testAlertManager.shownAlerts.count, 0)
   }
 
+  func testChangeDirectoryCopiesCurrentConfig() throws {
+    subject.ensureAndLoad()
+    waitForConfigLoad()
+    let expectedRoot = subject.root
+
+    let newDir = tempBaseDir.appending("/NewConfigDir")
+    XCTAssertTrue(subject.changeDirectory(to: newDir))
+    waitForConfigLoad()
+
+    XCTAssertEqual(Defaults[.configDir], (newDir as NSString).expandingTildeInPath)
+    XCTAssertTrue(FileManager.default.fileExists(atPath: subject.path))
+
+    let encoder = JSONEncoder()
+    encoder.outputFormatting = [.sortedKeys]
+    XCTAssertEqual(try encoder.encode(subject.root), try encoder.encode(expectedRoot))
+    XCTAssertEqual(testAlertManager.shownAlerts.count, 0)
+  }
+
+  func testChangeDirectoryKeepsOldDirectoryWhenTargetIsNotAFolder() throws {
+    subject.ensureAndLoad()
+    waitForConfigLoad()
+
+    let filePath = tempBaseDir.appending("/NotAFolder")
+    try "x".write(toFile: filePath, atomically: true, encoding: .utf8)
+
+    XCTAssertFalse(subject.changeDirectory(to: filePath))
+    XCTAssertEqual(Defaults[.configDir], tempBaseDir)
+    XCTAssertEqual(testAlertManager.shownAlerts.count, 1)
+  }
+
   private func waitForConfigLoad() {
     let expectation = expectation(description: "config load flush")
     DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {

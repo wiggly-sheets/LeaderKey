@@ -28,11 +28,15 @@ class Controller {
   init(userState: UserState, userConfig: UserConfig) {
     self.userState = userState
     self.userConfig = userConfig
+    self.cheatsheetWindow = Cheatsheet.createWindow(for: userState)
+    self.window = Theme.classFor(Defaults[.theme]).init(controller: self)
 
     Task {
-      for await value in Defaults.updates(.theme) {
-        let windowClass = Theme.classFor(value)
-        self.window = await windowClass.init(controller: self)
+      for await value in Defaults.updates(.theme, initial: false) {
+        let oldWindow = self.window
+        self.window = Theme.classFor(value).init(controller: self)
+        oldWindow?.delegate = nil
+        oldWindow?.close()
       }
     }
 
@@ -50,8 +54,6 @@ class Controller {
       default: break
       }
     }.store(in: &cancellables)
-
-    self.cheatsheetWindow = Cheatsheet.createWindow(for: userState)
   }
 
   func show() {

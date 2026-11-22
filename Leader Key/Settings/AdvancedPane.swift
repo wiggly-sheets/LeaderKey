@@ -34,7 +34,7 @@ struct AdvancedPane: View {
             panel.canChooseFiles = false
             if panel.runModal() != .OK { return }
             guard let selectedPath = panel.url else { return }
-            configDir = selectedPath.path
+            config.changeDirectory(to: selectedPath.path)
           }
           Button("Reveal") {
             NSWorkspace.shared.activateFileViewerSelecting([
@@ -43,7 +43,7 @@ struct AdvancedPane: View {
           }
 
           Button("Reset") {
-            configDir = UserConfig.defaultDirectory()
+            config.changeDirectory(to: UserConfig.defaultDirectory())
           }
         }
       }
@@ -146,6 +146,16 @@ struct AdvancedPane: View {
       }
       Settings.Section(title: "Other") {
         Defaults.Toggle("Show Leader Key in menubar", key: .showMenuBarIcon)
+        VStack(alignment: .leading, spacing: 4) {
+          Defaults.Toggle(
+            "Allow URL scheme automation", key: .urlSchemeAutomationEnabled)
+          Text(
+            "When enabled, other apps and scripts can trigger leaderkey://navigate and run configured actions."
+          )
+          .font(.caption)
+          .foregroundColor(.secondary)
+          .fixedSize(horizontal: false, vertical: true)
+        }
         VStack(alignment: .leading, spacing: 4) {
           Defaults.Toggle(
             "Force English keyboard layout", key: .forceEnglishKeyboardLayout)

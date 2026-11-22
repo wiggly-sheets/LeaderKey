@@ -96,6 +96,7 @@ class UserConfig: ObservableObject {
 
     // Create a new debounced save work item
     let currentRoot = root
+    let targetURL = url
     let workItem = DispatchWorkItem { [weak self] in
       guard let self = self else { return }
 
@@ -107,7 +108,7 @@ class UserConfig: ObservableObject {
         let jsonData = try encoder.encode(currentRoot)
 
         // Check conflicts on background queue first, then switch to main for UI
-        if let lastChecksum = self.lastReadChecksum, self.exists {
+        if targetURL == self.url, let lastChecksum = self.lastReadChecksum, self.exists {
           let currentChecksum = self.getCurrentFileChecksum()
           if currentChecksum != lastChecksum {
             DispatchQueue.main.async {
@@ -130,14 +131,16 @@ class UserConfig: ObservableObject {
               }
 
               // Continue with save after conflict resolution
-              self.performSaveWithData(jsonData, currentRoot: currentRoot)
+              self.performSaveWithData(
+                jsonData, currentRoot: currentRoot, targetURL: targetURL)
             }
             return
           }
         }
 
         DispatchQueue.main.async {
-          self.performSaveWithData(jsonData, currentRoot: currentRoot)
+          self.performSaveWithData(
+            jsonData, currentRoot: currentRoot, targetURL: targetURL)
         }
       } catch {
         DispatchQueue.main.async {
@@ -152,7 +155,7 @@ class UserConfig: ObservableObject {
     configIOQueue.asyncAfter(deadline: .now() + .milliseconds(300), execute: workItem)
   }
 
-  private func performSaveWithData(_ jsonData: Data, currentRoot: Group) {
+  private func performSaveWithData(_ jsonData: Data, currentRoot: Group, targetURL: URL) {
     // Validation on main queue
     let validationErrors = ConfigValidator.validate(group: currentRoot)
     setValidationErrors(validationErrors)
@@ -162,10 +165,11 @@ class UserConfig: ObservableObject {
       guard let self = self else { return }
 
       do {
-        try self.writeFile(data: jsonData)
+        try jsonData.write(to: targetURL, options: .atomic)
 
         DispatchQueue.main.async {
-          // Update checksum on main queue using data directly
+          // Do not let a stale save change the checksum for a new directory.
+          guard targetURL == self.url else { return }
           self.lastReadChecksum = self.calculateChecksum(jsonData)
         }
       } catch {
@@ -204,6 +208,70 @@ class UserConfig: ObservableObject {
       )
       Defaults[.configDir] = defaultDir
     }
+  }
+
+  /// Switch the config directory, keeping the current config file available.
+  /// Returns false and shows one alert when the target directory is unusable.
+  @discardableResult
+  func changeDirectory(to newPath: String) -> Bool {
+    let newDir = (newPath as NSString).expandingTildeInPath
+    let oldDir = Defaults[.configDir]
+    guard newDir != oldDir else { return true }
+
+    var isDir: ObjCBool = false
+    if fileManager.fileExists(atPath: newDir, isDirectory: &isDir), !isDir.boolValue {
+      alertHandler.showAlert(
+        style: .warning,
+        message: "Cannot use \(newDir) as config directory: it is not a folder.")
+      return false
+    }
+    do {
+      try fileManager.createDirectory(atPath: newDir, withIntermediateDirectories: true)
+    } catch {
+      alertHandler.showAlert(
+        style: .warning,
+        message:
+          "Cannot use \(newDir) as config directory: \(error.localizedDescription)")
+      return false
+    }
+    guard fileManager.isWritableFile(atPath: newDir) else {
+      alertHandler.showAlert(
+        style: .warning,
+        message: "Cannot use \(newDir) as config directory: it is not writable.")
+      return false
+    }
+
+    // Stop a pending save so it cannot write into the new directory.
+    saveWorkItem?.cancel()
+    saveWorkItem = nil
+
+    let previousData = try? Data(contentsOf: url)
+    let previousRoot = root
+
+    Defaults[.configDir] = newDir
+
+    // Never overwrite a config already present in the target directory.
+    if !exists {
+      do {
+        if let previousData = previousData {
+          try writeFile(data: previousData)
+        } else {
+          let encoder = JSONEncoder()
+          encoder.outputFormatting = [.prettyPrinted, .withoutEscapingSlashes, .sortedKeys]
+          try writeFile(data: try encoder.encode(previousRoot))
+        }
+      } catch {
+        Defaults[.configDir] = oldDir
+        alertHandler.showAlert(
+          style: .critical,
+          message: "Failed to copy config to \(newDir): \(error)\nKeeping \(oldDir).")
+        return false
+      }
+    }
+
+    // Reload so the checksum and validation state match the new file.
+    loadConfig()
+    return true
   }
 
   // MARK: - File Operations
