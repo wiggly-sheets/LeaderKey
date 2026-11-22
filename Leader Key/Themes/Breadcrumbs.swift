@@ -116,7 +116,7 @@ enum Breadcrumbs {
       .fixedSize(horizontal: true, vertical: true)
       .font(.system(size: 14, weight: .medium, design: .rounded))
       .background(
-        VisualEffectView(material: .hudWindow, blendingMode: .behindWindow)
+        ThemeBackground()
       )
     }
   }

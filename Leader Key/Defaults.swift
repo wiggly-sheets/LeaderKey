@@ -17,6 +17,10 @@ extension Defaults.Keys {
     "modifierKeyConfiguration", default: .controlGroupOptionSticky, suite: defaultsSuite)
   static let theme = Key<Theme>(
     "theme", default: .mysteryBox, suite: defaultsSuite)
+  static let backgroundStyle = Key<BackgroundStyle>(
+    "backgroundStyle", default: .classic, suite: defaultsSuite)
+  static let urlSchemeAutomationEnabled = Key<Bool>(
+    "urlSchemeAutomationEnabled", default: false, suite: defaultsSuite)
 
   static let autoOpenCheatsheet = Key<AutoOpenCheatsheetSetting>(
     "autoOpenCheatsheet",
@@ -39,6 +43,28 @@ extension Defaults.Keys {
   static let groupShortcuts = Key<Set<String>>(
     "groupShortcuts",
     default: Set(), suite: defaultsSuite)
+}
+
+enum BackgroundStyle: String, Defaults.Serializable, CaseIterable, Identifiable {
+  case classic
+  case glassRegular
+  case glassClear
+
+  var id: Self { self }
+
+  var description: String {
+    switch self {
+    case .classic: return "Classic Blur"
+    case .glassRegular: return "Liquid Glass"
+    case .glassClear: return "Liquid Glass Clear"
+    }
+  }
+
+  var isAvailable: Bool {
+    if self == .classic { return true }
+    if #available(macOS 26.0, *) { return true }
+    return false
+  }
 }
 
 enum AutoOpenCheatsheetSetting: String, Defaults.Serializable {

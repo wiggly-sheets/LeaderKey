@@ -9,6 +9,7 @@ struct GeneralPane: View {
   @EnvironmentObject private var config: UserConfig
   @Default(.configDir) var configDir
   @Default(.theme) var theme
+  @Default(.backgroundStyle) var backgroundStyle
 
   var body: some View {
     Settings.Container(contentWidth: contentWidth) {
@@ -93,6 +94,12 @@ struct GeneralPane: View {
         Picker("Theme", selection: $theme) {
           ForEach(Theme.all, id: \.self) { value in
             Text(Theme.name(value)).tag(value)
+          }
+        }.frame(maxWidth: 170).labelsHidden()
+
+        Picker("Background", selection: $backgroundStyle) {
+          ForEach(BackgroundStyle.allCases.filter(\.isAvailable), id: \.self) { value in
+            Text(value.description).tag(value)
           }
         }.frame(maxWidth: 170).labelsHidden()
       }

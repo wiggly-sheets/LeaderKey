@@ -62,7 +62,7 @@ enum Mini {
       .font(.system(size: 16, weight: .semibold, design: .rounded))
       .foregroundStyle(userState.currentGroup?.key == nil ? .secondary : .primary)
       .background(
-        VisualEffectView(material: .hudWindow, blendingMode: .behindWindow)
+        ThemeBackground()
       )
     }
   }

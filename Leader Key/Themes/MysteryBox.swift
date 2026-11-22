@@ -64,7 +64,7 @@ enum MysteryBox {
       }
       .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
       .background(
-        VisualEffectView(material: .hudWindow, blendingMode: .behindWindow)
+        ThemeBackground(cornerRadius: 25.0)
       )
       .clipShape(RoundedRectangle(cornerRadius: 25.0, style: .continuous))
     }

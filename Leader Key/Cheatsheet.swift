@@ -163,7 +163,7 @@ enum Cheatsheet {
       .frame(width: Cheatsheet.CheatsheetView.preferredWidth)
       .frame(height: min(contentHeight, maxHeight))
       .background(
-        VisualEffectView(material: .hudWindow, blendingMode: .behindWindow)
+        ThemeBackground()
       )
       .onPreferenceChange(HeightPreferenceKey.self) { height in
         self.contentHeight = height
