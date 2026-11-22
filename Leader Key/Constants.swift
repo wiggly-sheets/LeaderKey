@@ -1,6 +1,11 @@
 import Foundation
 import KeyboardShortcuts
 
+enum FeatureFlags {
+  /// Sparkle update UI is disabled until the fork has its own appcast.
+  static let sparkleUpdates = false
+}
+
 extension KeyboardShortcuts.Name {
   static let activate = Self("navigate")
 }

@@ -20,7 +20,7 @@ class AppDelegate: NSObject, NSApplicationDelegate,
   let config = UserConfig()
 
   var state: UserState!
-  @IBOutlet var updaterController: SPUStandardUpdaterController!
+  @IBOutlet var updaterController: SPUStandardUpdaterController?
 
   lazy var settingsWindowController = SettingsWindowController(
     panes: [
@@ -54,6 +54,11 @@ class AppDelegate: NSObject, NSApplicationDelegate,
     state = UserState(userConfig: config)
     controller = Controller(userState: state, userConfig: config)
 
+    if FeatureFlags.sparkleUpdates {
+      updaterController = SPUStandardUpdaterController(
+        startingUpdater: true, updaterDelegate: nil, userDriverDelegate: self)
+    }
+
     statusItem.handlePreferences = {
       self.showSettings()
     }
@@ -66,8 +71,10 @@ class AppDelegate: NSObject, NSApplicationDelegate,
     statusItem.handleRevealConfig = {
       NSWorkspace.shared.activateFileViewerSelecting([self.config.url])
     }
-    statusItem.handleCheckForUpdates = {
-      self.updaterController.checkForUpdates(nil)
+    if FeatureFlags.sparkleUpdates {
+      statusItem.handleCheckForUpdates = {
+        self.updaterController?.checkForUpdates(nil)
+      }
     }
 
     Task {
@@ -201,7 +208,7 @@ class AppDelegate: NSObject, NSApplicationDelegate,
       == updateLocationIdentifier
       && response.actionIdentifier == UNNotificationDefaultActionIdentifier
     {
-      updaterController.checkForUpdates(nil)
+      updaterController?.checkForUpdates(nil)
     }
     completionHandler()
   }
@@ -239,6 +246,8 @@ class AppDelegate: NSObject, NSApplicationDelegate,
     case .reset:
       state.clear()
     case .navigate(let keys, let execute):
+      // Ignore silently: navigate can run configured actions (e.g. shell commands).
+      guard Defaults[.urlSchemeAutomationEnabled] else { return }
       show()
       processKeys(keys, execute: execute)
     case .show:

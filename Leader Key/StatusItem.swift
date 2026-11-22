@@ -1,6 +1,5 @@
 import Cocoa
 import Combine
-import Sparkle
 
 class StatusItem {
   enum Appearance {
@@ -60,10 +59,11 @@ class StatusItem {
       title: "Check for Updates...", action: #selector(checkForUpdates),
       keyEquivalent: ""
     )
-    checkForUpdatesItem.target = self
-    menu.addItem(checkForUpdatesItem)
-
-    menu.addItem(NSMenuItem.separator())
+    if handleCheckForUpdates != nil {
+      checkForUpdatesItem.target = self
+      menu.addItem(checkForUpdatesItem)
+      menu.addItem(NSMenuItem.separator())
+    }
 
     let revealConfigItem = NSMenuItem(
       title: "Show config in Finder", action: #selector(revealConfigFile),

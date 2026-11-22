@@ -1,17 +1,10 @@
-# Trigger build 1
 name: Appcast
 
 on:
-  push:
-    branches: [main]
-  release:
-    types: [published]
   workflow_dispatch:
 
 jobs:
-  call-workflow:
-    uses: mikker/appcast-workflow/.github/workflows/appcast.yml@main
-    secrets: inherit
-    permissions:
-      pages: write
-      id-token: write
+  disabled:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Appcast publishing is disabled until this fork has its own feed and signing setup."

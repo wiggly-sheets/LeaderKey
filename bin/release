@@ -1,6 +1,11 @@
 #!/bin/bash
 set -e
 
+# Disabled in the Wiggly Sheets fork. Re-enable only after adding this fork's
+# signing, notarization, S3 bucket, and appcast. See docs/sparkle-updates.md.
+echo "Release pipeline disabled: this fork has no release feed or signing setup yet."
+exit 1
+
 APP_NAME="Leader Key"
 BUCKET=leader-key-updates
 
