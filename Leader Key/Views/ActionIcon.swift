@@ -104,14 +104,36 @@ struct AppIconImage: View {
 }
 
 struct FavIconImage: View {
-  let url: String
+  private enum Source {
+    case duckDuckGo
+    case google
+  }
+
+  let sourceURL: String
+  let host: String
   let icon: String
   let size: NSSize
+  @State private var source: Source = .duckDuckGo
 
   init(url: String, icon: String, size: NSSize = NSSize(width: 24, height: 24)) {
-    self.url = "https://www.google.com/s2/favicons?sz=128&domain=\(url)"
+    // Send only the host to icon providers, never the full URL with path or query.
+    self.sourceURL = url
+    let components = URLComponents(string: url)
+    let scheme = components?.scheme?.lowercased()
+    let host = components?.host ?? ""
+    self.host = (scheme == "http" || scheme == "https") ? host : ""
     self.size = size
     self.icon = icon
+  }
+
+  private var faviconURL: URL? {
+    guard !host.isEmpty else { return nil }
+    switch source {
+    case .duckDuckGo:
+      return URL(string: "https://icons.duckduckgo.com/ip3/\(host).ico")
+    case .google:
+      return URL(string: "https://www.google.com/s2/favicons?sz=128&domain=\(host)")
+    }
   }
 
   var fallback: some View {
@@ -120,14 +142,21 @@ struct FavIconImage: View {
   }
 
   var body: some View {
-    if url.starts(with: "http:") || url.starts(with: "https:") {
-      KFImage.url(URL(string: url)).placeholder({
+    SwiftUI.Group {
+      if let faviconURL {
+        KFImage.url(faviconURL).placeholder({
+          fallback
+        }).onFailure { (_: KingfisherError) in
+          source = .google
+        }.resizable()
+          .padding(4)
+          .frame(width: size.width, height: size.height, alignment: .center)
+      } else {
         fallback
-      }).resizable()
-        .padding(4)
-        .frame(width: size.width, height: size.height, alignment: .center)
-    } else {
-      fallback
+      }
+    }
+    .onChange(of: sourceURL) { _ in
+      source = .duckDuckGo
     }
   }
 }
