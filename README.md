@@ -1,100 +1,136 @@
-# NB: Leader Key has been surpassed by [Tuna](https://tunaformac.com)
+# Leader Key — Wiggly Sheets fork
 
-Tuna is a complete launcher – much more capable, and with **Leader Key built in!**
+This is an independent fork of [Leader Key](https://github.com/mikker/LeaderKey), maintained at
+[wiggly-sheets/LeaderKey](https://github.com/wiggly-sheets/LeaderKey).
 
-[![Meet Tuna](https://img.youtube.com/vi/vkm-ZFlivyI/mqdefault.jpg)](https://www.youtube.com/watch?v=vkm-ZFlivyI)
+**This fork is not affiliated with, endorsed by, or supported by Mikkel Malmberg, the upstream
+Leader Key project, or Tuna.** Report issues with this fork here, not upstream.
 
-[Leader Key will stay free and open source](https://github.com/mikker/LeaderKey/discussions/314#discussioncomment-15939059) but my focus will be on Tuna going forward. 
+The fork keeps the original leader-key workflow and adds the features listed below. It uses the
+bundle identifier `com.wigglysheets.LeaderKey`, has its own local development setup, and does not
+contact the original update feed.
 
----
-  
-<img src="https://s3.brnbw.com/icon_1024-akc2Ij3q9JOyhQ6Y7Lz6AFkX6nQQFhrQaRPqbV4vor0A62EA0vq4xOGrXpg6PVKi3aUJxOAyItkyktblPtZD4K4oYZ1bJVdh96VE.png" width="256" height="256" alt="Leader Key.app" />
+## Fork additions
 
-**The \*faster than your launcher\* launcher**
+- **Hyper key as ✦** — enable **Settings > General > Show hyper key as ✦** to display every
+  Control-Option-Shift-Command shortcut as `✦ + key` in the shortcut recorders. Turn it off to show
+  the normal modifier glyphs.
+- **Clipboard placeholder in commands** — use `{{clipboard}}` in a command action to insert the
+  current text clipboard. Use `\{{clipboard}}` for a literal placeholder. Unknown placeholders are
+  left alone. Very large clipboards are rejected with an alert.
+- **Named action deep links** — run an action by its exact label:
+  `leaderkey://run?name=Reply%20with%20thanks`. Requires **Allow URL scheme automation** in
+  Settings > Advanced. Missing or duplicate labels do nothing.
+- **Text snippet action** — add an action with `"type": "text"` and `"value": "your text"` to type
+  a fixed string into the frontmost app. This needs Accessibility permission. Secure input blocks
+  insertion, and sticky mode skips insertion so the window remains open.
+- **Cheatsheet search** — press <kbd>⌘F</kbd> while Leader Key is open, or click the magnifier in the
+  cheatsheet. Results show their group path, and <kbd>Return</kbd> or a click runs or opens the
+  selected item.
+- **Fuzzy cheatsheet search** — when an exact match is not enough, results are ranked with fuzzy
+  matching. Exact and substring matches stay first, and matched characters in the item name are
+  highlighted.
+- **Liquid Glass tint** — on macOS 26 and later, choose a tint for Liquid Glass backgrounds in
+  Settings > General.
+- **Updates disabled** — this fork does not check the original appcast and has no automatic update
+  feed yet. See [docs/sparkle-updates.md](docs/sparkle-updates.md).
 
-A riff on [Raycast](https://www.raycast.com), [@mxstbr's multi-key Karabiner setup](https://www.youtube.com/watch?v=m5MDv9qwhU8&t=540s), and Vim's `<leader>` key.
+The original upstream project has its own features, releases, and support channels. This fork does
+not speak for it.
 
-Watch the intro video on YouTube:
+## Install from source
 
-<div>
-<a href="https://www.youtube.com/watch?v=EQYakLsYSAQ"><img src="https://img.youtube.com/vi/EQYakLsYSAQ/maxresdefault.jpg" width=480></a>
-<a href="https://www.youtube.com/watch?v=hzzQl5FOL-k"><img src="https://img.youtube.com/vi/hzzQl5FOL-k/maxresdefault.jpg" width=480></a>
-</div>
-
-*Yes, I only have that one thumbnail face.*
-
-## Install
-
-**Download**
-
-📦 [Download latest version](https://github.com/mikker/LeaderKey.app/releases)
-or
-
-**Homebrew**
+This fork has no binary releases or Homebrew formula yet. Build it locally:
 
 ```sh
-$ brew install leader-key
+git clone https://github.com/wiggly-sheets/LeaderKey.git
+cd LeaderKey
+xcodebuild -scheme "Leader Key" -configuration Release -derivedDataPath build build
+cp -R "build/Build/Products/Release/Leader Key.app" /Applications/
+open "/Applications/Leader Key.app"
 ```
 
-### Post-Install setup
-- Open the settings menu with the menu bar icon <img width="17" alt="Screenshot 2025-05-21 at 1 58 46 PM" src="https://github.com/user-attachments/assets/7ba2cd99-dbd1-4b23-a35b-c5579e797321" />
-- Choose your [`leader`](#what-do-i-set-as-my-leader-key) (`Shortcut` that will open the app) 
+Requires macOS 14.4 or later and Xcode. Local builds do not use the upstream signing setup.
 
-  <img width="213" alt="Screenshot 2025-05-21 at 2 01 56 PM" src="https://github.com/user-attachments/assets/5e486a9a-ee1c-4ac7-a2d9-f4d0a46eb734" />
-- Add your [shortcuts](#example-shortcuts) to the `Config` settings
+### Post-install setup
+
+- Open the settings menu from the menu bar icon.
+- Choose your leader key. Only modifiers will not work.
+- Add shortcuts in the **Config** settings.
+
+Configuration lives at `~/Library/Application Support/Leader Key/config.json` unless you choose
+another directory in Settings.
+
+## Tests
+
+```sh
+xcodebuild -scheme "Leader Key" -testPlan "TestPlan" test
+```
 
 ## Why Leader Key?
 
-### Problems with traditional launchers:
+### Problems with traditional launchers
 
 1. Typing the name of the thing can be slow and give unpredictable results.
 2. Global shortcuts have limited combinations.
-3. Leader Key offers predictable, nested shortcuts -- like combos in a fighting game.
+3. Leader Key offers predictable, nested shortcuts, like combos in a fighting game.
 
-### Example Shortcuts:
+### Example shortcuts
 
 - <kbd>leader</kbd><kbd>o</kbd><kbd>m</kbd> → Launch Messages (`open messages`)
 - <kbd>leader</kbd><kbd>m</kbd><kbd>m</kbd> → Mute audio (`media mute`)
-- <kbd>leader</kbd><kbd>w</kbd><kbd>m</kbd> → Maximize current window (`window maximize`)
+- <kbd>leader</kbd><kbd>w</kbd><kbd>m</kbd> → Maximize the current window (`window maximize`)
+
+## Text snippet actions
+
+A text action inserts a fixed string into the app that was frontmost before Leader Key opened.
+
+```json
+{
+  "key": "s",
+  "type": "text",
+  "value": "Thanks for the review!",
+  "label": "Reply"
+}
+```
+
+The first 40 characters of `value` are used as the default display name. Newlines and tabs are sent
+as Return and Tab. Other control characters are skipped.
+
+Text insertion uses synthetic keyboard input. Grant Accessibility permission when macOS asks.
+Insertion is blocked while secure input is active. In sticky mode the action keeps the window open
+and does not insert anything.
 
 ## URL Scheme
 
-Leader Key supports URL scheme automation for integration with tools like Alfred, Raycast, shell scripts, and more.
+Leader Key supports URL scheme automation for integration with Alfred, Raycast, shell scripts, and
+other tools.
 
-### Available URL Schemes
+### Configuration management
 
-#### Configuration Management
-```bash
-# Reload configuration from disk
+```sh
 open "leaderkey://config-reload"
-
-# Show config.json in Finder
 open "leaderkey://config-reveal"
 ```
 
-#### Window Control
-```bash
-# Show Leader Key window
+### Window control
+
+```sh
 open "leaderkey://activate"
-
-# Hide Leader Key window
 open "leaderkey://hide"
-
-# Clear navigation state (return to root)
 open "leaderkey://reset"
 ```
 
-#### Settings & Info
-```bash
-# Open settings window
-open "leaderkey://settings"
+### Settings and info
 
-# Show about dialog
+```sh
+open "leaderkey://settings"
 open "leaderkey://about"
 ```
 
-#### Navigation
-```bash
+### Navigation
+
+```sh
 # Navigate through keys and execute actions
 open "leaderkey://navigate?keys=a,b,c"
 
@@ -102,55 +138,60 @@ open "leaderkey://navigate?keys=a,b,c"
 open "leaderkey://navigate?keys=a,b,c&execute=false"
 ```
 
-#### Named Actions
-```bash
+### Named actions
+
+```sh
 # Run the action with this exact label. Requires "Allow URL scheme automation"
 # in Settings > Advanced. Duplicate or missing labels do nothing.
 open "leaderkey://run?name=Reply%20with%20thanks"
 ```
 
-### Example Use Cases
+Named action lookup only matches action labels, uses exact case-sensitive labels, and ignores
+groups. If more than one action has the label, nothing runs.
 
-- **Alfred/Raycast workflows**: Trigger Leader Key shortcuts programmatically
-- **Shell scripts**: Automate configuration reloads after editing config.json
-- **Keyboard maestro**: Chain Leader Key actions with other automations
-- **External triggers**: Open specific action sequences from other applications
+### Example use cases
+
+- Alfred or Raycast workflows that trigger Leader Key shortcuts.
+- Shell scripts that reload configuration after editing `config.json`.
+- Keyboard Maestro chains that combine Leader Key with other automations.
+- External triggers that open specific action sequences from other apps.
 
 ## FAQ
 
-#### What do I set as my Leader Key?
+### What do I set as my leader key?
 
-Any key can be your leader key, but **only modifiers will not work**.
+Any key can be your leader key, but only modifiers will not work.
 
-**Examples:**
+Examples:
 
 - <kbd>F12</kbd>
 - <kbd>⌘ + space</kbd>
 - <kbd>⌘⌥ + space</kbd>
 - <kbd>⌘⌥⌃⇧ + L</kbd> (hyper key)
 
-**Advanced examples:**
+With **Show hyper key as ✦** enabled, the last example appears as <kbd>✦ + L</kbd> in shortcut
+recorders.
 
-Using [Karabiner](https://karabiner-elements.pqrs.org/) you can do more fancy things like:
+Advanced setups can use [Karabiner Elements](https://karabiner-elements.pqrs.org/), for example:
 
-- <kbd>right ⌘ + left ⌘</kbd> at once (bound to <kbd>F12</kbd>) my personal favorite
-- <kbd>caps lock</kbd> (bound to <kbd>hyper</kbd> when held, <kbd>F12</kbd> when pressed)
+- <kbd>right ⌘ + left ⌘</kbd> at once, bound to <kbd>F12</kbd>.
+- <kbd>caps lock</kbd>, bound to hyper when held and <kbd>F12</kbd> when pressed.
 
-See [@mikker's config](https://github.com/mikker/LeaderKey.app/wiki/@mikker's-config) in the wiki for akimbo cmds example.
+### I disabled the menu bar item. How do I get Leader Key back?
 
-#### I disabled the menubar item, how can I get Leader Key back?
+Activate Leader Key, then press <kbd>⌘ + ,</kbd>.
 
-Activate Leader Key, then <kbd>cmd + ,</kbd>.
+### A command action fails with "Command not found"
 
-#### Command action is failing with "Command not found"
+Make sure your shell environment is set up for non-interactive mode and exports `PATH`.
 
-You need to make sure your shell environment is correctly set up for non-interactive mode, and exports the `PATH` variable.
+For zsh, export `PATH` in `~/.zshenv`. For bash, export it in `~/.bash_profile`.
 
-**For zsh** make sure you have your `PATH` variable exported in `~/.zshenv`
+## Upstream and license
 
-**For bash** make sure you have your `PATH` variable exported in `~/.bash_profile`
+Leader Key was created by Mikkel Malmberg. The upstream project is
+[mikker/LeaderKey](https://github.com/mikker/LeaderKey). This fork is independent and does not
+claim affiliation with or endorsement from the upstream project.
 
-
-## License
-
-MIT
+MIT License. Original code Copyright (c) 2024 Mikkel Malmberg. Fork modifications Copyright (c) 2026
+Zeb Mikula. See [LICENSE](LICENSE).

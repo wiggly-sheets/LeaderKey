@@ -4,7 +4,12 @@ This file provides guidance to coding agents when working with code in this repo
 
 # Leader Key Development Guide
 
+This is the independent Wiggly Sheets fork of Leader Key. Do not describe it as affiliated with,
+endorsed by, or supported by the upstream project or its author.
+
 ## Build & Test Commands
+
+Do not build or run the app unless the user asks.
 
 - Build and run: `xcodebuild -scheme "Leader Key" -configuration Debug build`
 - Run all tests: `xcodebuild -scheme "Leader Key" -testPlan "TestPlan" test`
@@ -23,6 +28,9 @@ Leader Key is a macOS application that provides customizable keyboard shortcuts.
 - `UserConfig`: JSON configuration management with validation
 - `UserState`: Tracks navigation through key sequences
 - `MainWindow`: Base class for theme windows
+- `URLSchemeHandler`: URL commands, including exact-label named actions
+- `TextInserter`: Accessibility-gated synthetic text insertion for text actions
+- `CheatsheetSearch` / `FuzzyMatcher`: Cheatsheet search and fuzzy ranking
 
 **Theme System:**
 
@@ -35,7 +43,10 @@ Leader Key is a macOS application that provides customizable keyboard shortcuts.
 - Config stored at `~/Library/Application Support/Leader Key/config.json`
 - `FileMonitor` watches for changes and triggers reload
 - `ConfigValidator` ensures no key conflicts
-- Actions support: applications, URLs, commands, folders
+- Actions support: applications, URLs, commands, folders, text snippets
+- Command actions support `{{clipboard}}`; use `\{{clipboard}}` for a literal placeholder
+- Named deep links run only a unique, exact action label and require URL scheme automation
+- The fork disables Sparkle updates and the original release feed
 
 **Testing Architecture:**
 

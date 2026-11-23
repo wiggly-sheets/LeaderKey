@@ -1,5 +1,9 @@
 # Sparkle Updates
 
+This document applies to the independent
+[Wiggly Sheets fork](https://github.com/wiggly-sheets/LeaderKey). The fork is not affiliated with or
+endorsed by the upstream Leader Key project.
+
 Updates are disabled in this fork. Nothing contacts an appcast server.
 
 ## Current state

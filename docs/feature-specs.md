@@ -1,6 +1,19 @@
-# Feature Specs
+# Feature Specs — Wiggly Sheets fork
 
-Status: draft. Target: dev fork of Leader Key. Keep each implementation small and reversible.
+Status: implemented. These specs are kept as a design record for the independent
+[Wiggly Sheets fork](https://github.com/wiggly-sheets/LeaderKey). The fork is not affiliated with or
+endorsed by the upstream Leader Key project.
+
+| Feature | Status | Commit |
+| --- | --- | --- |
+| Text snippet action | Implemented | `f962994` |
+| Clipboard placeholder for command actions | Implemented | `008d76f` |
+| Named action deep link | Implemented | `8a9125e` |
+| Cheatsheet search | Implemented | `4dc48b7` |
+| Liquid Glass tint | Implemented | `76bfc4a` |
+| Fuzzy cheatsheet search | Implemented | `f9364a2` |
+
+The fork also added optional `✦` display for hyper key shortcuts in `bb95a6a`.
 
 Global constraints:
 
