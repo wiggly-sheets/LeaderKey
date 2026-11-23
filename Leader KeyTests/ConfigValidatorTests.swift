@@ -267,3 +267,32 @@ final class ShortcutDisplayTests: XCTestCase {
       shortcut.description)
   }
 }
+
+final class TextInserterTests: XCTestCase {
+  func testSegmentsLimitUTF16Chunks() {
+    let text = String(repeating: "a", count: 45)
+
+    XCTAssertEqual(
+      TextInserter.segments(for: text),
+      [
+        .text(String(repeating: "a", count: 20)),
+        .text(String(repeating: "a", count: 20)),
+        .text(String(repeating: "a", count: 5)),
+      ])
+  }
+
+  func testSurrogatePairStaysInOneChunk() {
+    let prefix = String(repeating: "a", count: 19)
+    let emoji = "😀"
+
+    XCTAssertEqual(
+      TextInserter.segments(for: prefix + emoji),
+      [.text(prefix), .text(emoji)])
+  }
+
+  func testMapsNewlineAndTabAndSkipsOtherControls() {
+    XCTAssertEqual(
+      TextInserter.segments(for: "a\n\tb\u{0}c\rd"),
+      [.text("a"), .newline, .tab, .text("bcd")])
+  }
+}

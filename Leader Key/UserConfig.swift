@@ -482,6 +482,8 @@ enum Type: String, Codable {
   case url
   case command
   case folder
+  /// Inserts literal text. Newlines press Return, so terminals and editors may execute commands.
+  case text
 }
 
 protocol Item {
@@ -519,6 +521,13 @@ struct Action: Item, Codable, Equatable {
       return (value as NSString).lastPathComponent
     case .url:
       return "URL"
+    case .text:
+      let singleLine =
+        value
+        .replacingOccurrences(of: "\n", with: " ")
+        .replacingOccurrences(of: "\r", with: " ")
+        .replacingOccurrences(of: "\t", with: " ")
+      return String(singleLine.prefix(40))
     default:
       return value
     }

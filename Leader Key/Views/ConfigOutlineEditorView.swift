@@ -547,7 +547,7 @@ private class ActionCellView: NSTableCellView, NSWindowDelegate {
     keyButton.controlSize = .regular
     keyButton.widthAnchor.constraint(equalToConstant: Layout.keyWidth).isActive = true
     keyButton.wantsLayer = true
-    typePopup.addItems(withTitles: ["Application", "URL", "Command", "Folder"])
+    typePopup.addItems(withTitles: ["Application", "URL", "Command", "Folder", "Text"])
     typePopup.controlSize = .regular
     typePopup.widthAnchor.constraint(equalToConstant: Layout.typeWidth).isActive = true
     valueStack.orientation = .horizontal
@@ -748,6 +748,8 @@ private class ActionCellView: NSTableCellView, NSWindowDelegate {
         return ValueDescriptor(kind: .prompt("Command"), display: action.value)
       case .url:
         return ValueDescriptor(kind: .prompt("URL"), display: action.value)
+      case .text:
+        return ValueDescriptor(kind: .prompt("Text"), display: action.value)
       default:
         return ValueDescriptor(kind: .prompt("Value"), display: action.value)
       }
@@ -820,11 +822,12 @@ private class ActionCellView: NSTableCellView, NSWindowDelegate {
     case .url: return 1
     case .command: return 2
     case .folder: return 3
+    case .text: return 4
     default: return 0
     }
   }
   private static func type(for idx: Int) -> Type {
-    [Type.application, .url, .command, .folder][max(0, min(3, idx))]
+    [Type.application, .url, .command, .folder, .text][max(0, min(4, idx))]
   }
 
   private func promptText(title: String, initial: String, onOK: @escaping (String) -> Void) {

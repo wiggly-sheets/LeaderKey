@@ -172,6 +172,31 @@ final class UserConfigTests: XCTestCase {
     XCTAssertEqual(testAlertManager.shownAlerts.count, 1)
   }
 
+  func testTextActionRoundTrips() throws {
+    let action = Action(key: "s", type: .text, label: "Reply", value: "Thanks\nfor the review")
+
+    let data = try JSONEncoder().encode(ActionOrGroup.action(action))
+    guard case .action(let decoded) = try JSONDecoder().decode(ActionOrGroup.self, from: data)
+    else {
+      return XCTFail("Expected an action")
+    }
+
+    XCTAssertEqual(decoded.key, "s")
+    XCTAssertEqual(decoded.type, .text)
+    XCTAssertEqual(decoded.label, "Reply")
+    XCTAssertEqual(decoded.value, "Thanks\nfor the review")
+  }
+
+  func testTextActionDisplayNameIsTruncatedToOneLine() {
+    let value = String(repeating: "x", count: 50)
+    let action = Action(key: "s", type: .text, value: "first\nsecond")
+
+    XCTAssertEqual(action.displayName, "first second")
+    XCTAssertEqual(
+      Action(key: "s", type: .text, value: value).displayName,
+      String(value.prefix(40)))
+  }
+
   private func waitForConfigLoad() {
     let expectation = expectation(description: "config load flush")
     DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {

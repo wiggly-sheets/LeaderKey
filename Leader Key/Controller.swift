@@ -163,7 +163,7 @@ class Controller {
     case .action(let action):
       if execute {
         if let mods = modifiers, isInStickyMode(mods) {
-          runAction(action)
+          runAction(action, isSticky: true)
         } else {
           hide {
             self.runAction(action)
@@ -301,7 +301,7 @@ class Controller {
     }
   }
 
-  func runAction(_ action: Action) {
+  func runAction(_ action: Action, isSticky: Bool = false) {
     switch action.type {
     case .application:
       NSWorkspace.shared.openApplication(
@@ -314,6 +314,12 @@ class Controller {
     case .folder:
       let path: String = (action.value as NSString).expandingTildeInPath
       NSWorkspace.shared.selectFile(nil, inFileViewerRootedAtPath: path)
+    case .text:
+      // Sticky mode keeps Leader Key visible; inserting would target the palette.
+      guard !isSticky else { break }
+      delay(150) {
+        TextInserter.insert(action.value)
+      }
     default:
       print("\(action.type) unknown")
     }

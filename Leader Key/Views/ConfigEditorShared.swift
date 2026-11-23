@@ -124,6 +124,8 @@ extension Action {
       return NSImage(systemSymbolName: "terminal", accessibilityDescription: nil)
     case .folder:
       return NSImage(systemSymbolName: "folder", accessibilityDescription: nil)
+    case .text:
+      return NSImage(systemSymbolName: "text.cursor", accessibilityDescription: nil)
     default:
       return NSImage(systemSymbolName: "questionmark", accessibilityDescription: nil)
     }
