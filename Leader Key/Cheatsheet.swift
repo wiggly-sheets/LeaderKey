@@ -1,3 +1,4 @@
+import Combine
 import Defaults
 import Kingfisher
 import SwiftUI
@@ -100,9 +101,58 @@ enum Cheatsheet {
     }
   }
 
+  struct SearchResultRow: SwiftUI.View {
+    let result: CheatsheetSearch.Result
+    let isSelected: Bool
+    @Default(.showDetailsInCheatsheet) var showDetails
+    @Default(.showAppIconsInCheatsheet) var showIcons
+
+    var body: some SwiftUI.View {
+      HStack {
+        KeyBadge(key: result.item.item.key ?? "●")
+
+        if showIcons {
+          actionIcon(item: result.item, iconSize: iconSize)
+        }
+
+        VStack(alignment: .leading, spacing: 2) {
+          Text(result.item.item.displayName)
+            .lineLimit(1)
+            .truncationMode(.middle)
+
+          if !result.path.isEmpty {
+            Text(result.path.joined(separator: " › "))
+              .font(.caption)
+              .foregroundStyle(.secondary)
+              .lineLimit(1)
+              .truncationMode(.middle)
+          }
+        }
+
+        Spacer()
+
+        if showDetails, case .action(let action) = result.item {
+          Text(action.value)
+            .foregroundStyle(.secondary)
+            .lineLimit(1)
+            .truncationMode(.middle)
+        }
+      }
+      .padding(.vertical, 3)
+      .padding(.horizontal, 4)
+      .background(isSelected ? Color.accentColor.opacity(0.18) : Color.clear)
+      .clipShape(RoundedRectangle(cornerRadius: 5))
+    }
+  }
+
   struct CheatsheetView: SwiftUI.View {
     @EnvironmentObject var userState: UserState
     @State private var contentHeight: CGFloat = 0
+    @State private var query = ""
+    @State private var isSearchActive = false
+    @State private var selectedIndex = 0
+    @State private var window: NSWindow?
+    @FocusState private var searchFocused: Bool
 
     var maxHeight: CGFloat {
       if let screen = NSScreen.main {
@@ -127,26 +177,50 @@ enum Cheatsheet {
         ? userState.currentGroup!.actions : userState.userConfig.root.actions
     }
 
+    var searchResults: [CheatsheetSearch.Result] {
+      CheatsheetSearch.results(in: userState.userConfig.root, query: query)
+    }
+
     var body: some SwiftUI.View {
       ScrollView {
         SwiftUI.VStack(alignment: .leading, spacing: 4) {
-          if let group = userState.currentGroup {
-            HStack {
-              KeyBadge(key: group.key ?? "•")
-              Text(group.key == nil ? "Leader Key" : group.displayName)
-                .foregroundStyle(.secondary)
-            }
-            .padding(.bottom, 8)
-            Divider()
-              .padding(.bottom, 8)
-          }
+          searchHeader
 
-          ForEach(Array(actions.enumerated()), id: \.offset) { _, item in
-            switch item {
-            case .action(let action):
-              Cheatsheet.ActionRow(action: action, indent: 0)
-            case .group(let group):
-              Cheatsheet.GroupRow(group: group, indent: 0)
+          if query.isEmpty {
+            if let group = userState.currentGroup {
+              HStack {
+                KeyBadge(key: group.key ?? "•")
+                Text(group.key == nil ? "Leader Key" : group.displayName)
+                  .foregroundStyle(.secondary)
+              }
+              .padding(.bottom, 8)
+              Divider()
+                .padding(.bottom, 8)
+            }
+
+            ForEach(Array(actions.enumerated()), id: \.offset) { _, item in
+              switch item {
+              case .action(let action):
+                Cheatsheet.ActionRow(action: action, indent: 0)
+              case .group(let group):
+                Cheatsheet.GroupRow(group: group, indent: 0)
+              }
+            }
+          } else if searchResults.isEmpty {
+            Text("No matches")
+              .foregroundStyle(.secondary)
+              .padding(.vertical, 8)
+          } else {
+            ForEach(Array(searchResults.enumerated()), id: \.element.id) { index, result in
+              Cheatsheet.SearchResultRow(
+                result: result,
+                isSelected: index == selectedIndex
+              )
+              .contentShape(Rectangle())
+              .onTapGesture {
+                selectedIndex = index
+                activate(result)
+              }
             }
           }
         }
@@ -165,8 +239,125 @@ enum Cheatsheet {
       .background(
         ThemeBackground()
       )
+      .background(
+        WindowAccessor { newWindow in
+          if window !== newWindow { window = newWindow }
+        }
+      )
       .onPreferenceChange(HeightPreferenceKey.self) { height in
         self.contentHeight = height
+      }
+      .onReceive(NotificationCenter.default.publisher(for: .lkCheatsheetSearch)) { _ in
+        beginSearch()
+      }
+      .onChange(of: query) { _ in
+        selectedIndex = 0
+      }
+      .onChange(of: searchResults.count) { count in
+        selectedIndex = min(selectedIndex, max(0, count - 1))
+      }
+    }
+
+    private var searchHeader: some SwiftUI.View {
+      HStack(spacing: 6) {
+        Button {
+          beginSearch()
+        } label: {
+          Image(systemName: "magnifyingglass")
+        }
+        .buttonStyle(.plain)
+        .help("Search cheatsheet (⌘F)")
+
+        if isSearchActive {
+          TextField("Search", text: $query)
+            .textFieldStyle(.plain)
+            .focused($searchFocused)
+            .onSubmit { activateSelected() }
+            .onMoveCommand { direction in
+              switch direction {
+              case .up:
+                selectedIndex = max(0, selectedIndex - 1)
+              case .down:
+                selectedIndex = min(max(0, searchResults.count - 1), selectedIndex + 1)
+              default:
+                break
+              }
+            }
+            .onExitCommand { handleEscape() }
+            .padding(.vertical, 4)
+            .padding(.horizontal, 6)
+            .background(.white.opacity(0.1))
+            .clipShape(RoundedRectangle(cornerRadius: 5))
+
+          if !query.isEmpty {
+            Button {
+              query = ""
+            } label: {
+              Image(systemName: "xmark.circle.fill")
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(.secondary)
+          }
+        }
+
+        Spacer()
+      }
+      .padding(.bottom, 6)
+    }
+
+    private func beginSearch() {
+      isSearchActive = true
+      window?.makeKey()
+      DispatchQueue.main.async {
+        searchFocused = true
+      }
+    }
+
+    private func endSearch() {
+      isSearchActive = false
+      query = ""
+      searchFocused = false
+      selectedIndex = 0
+      NotificationCenter.default.post(name: .lkCheatsheetEndSearch, object: nil)
+    }
+
+    private func handleEscape() {
+      if !query.isEmpty {
+        query = ""
+        return
+      }
+      endSearch()
+    }
+
+    private func activateSelected() {
+      guard !query.isEmpty, searchResults.indices.contains(selectedIndex) else { return }
+      activate(searchResults[selectedIndex])
+    }
+
+    private func activate(_ result: CheatsheetSearch.Result) {
+      isSearchActive = false
+      query = ""
+      searchFocused = false
+
+      switch result.item {
+      case .action(let action):
+        NotificationCenter.default.post(name: .lkCheatsheetRunAction, object: action)
+      case .group(let group):
+        NotificationCenter.default.post(name: .lkCheatsheetNavigate, object: group)
+      }
+    }
+
+    private struct WindowAccessor: NSViewRepresentable {
+      let onWindow: (NSWindow?) -> Void
+
+      func makeNSView(context: Context) -> NSView {
+        let view = NSView()
+        DispatchQueue.main.async { onWindow(view.window) }
+        return view
+      }
+
+      func updateNSView(_ nsView: NSView, context: Context) {
+        DispatchQueue.main.async { onWindow(nsView.window) }
       }
     }
   }
@@ -187,6 +378,13 @@ enum Cheatsheet {
     cheatsheet.contentViewController = controller
     return cheatsheet
   }
+}
+
+extension Notification.Name {
+  static let lkCheatsheetSearch = Notification.Name("LKCheatsheetSearch")
+  static let lkCheatsheetEndSearch = Notification.Name("LKCheatsheetEndSearch")
+  static let lkCheatsheetRunAction = Notification.Name("LKCheatsheetRunAction")
+  static let lkCheatsheetNavigate = Notification.Name("LKCheatsheetNavigate")
 }
 
 struct CheatsheetView_Previews: PreviewProvider {

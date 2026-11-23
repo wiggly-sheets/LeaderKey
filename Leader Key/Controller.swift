@@ -15,6 +15,18 @@ enum KeyHelpers: UInt16 {
   case rightArrow = 124
 }
 
+private final class CheatsheetWindowDelegate: NSObject, NSWindowDelegate {
+  weak var controller: Controller?
+
+  func windowDidResignKey(_ notification: Notification) {
+    guard let controller else { return }
+    DispatchQueue.main.async {
+      guard !controller.hasKeyWindow, controller.window.isVisible else { return }
+      controller.hide()
+    }
+  }
+}
+
 class Controller {
   var userState: UserState
   var userConfig: UserConfig
@@ -22,8 +34,15 @@ class Controller {
   var window: MainWindow!
   var cheatsheetWindow: NSWindow!
   private var cheatsheetTimer: Timer?
+  private let cheatsheetWindowDelegate = CheatsheetWindowDelegate()
+  private var commandFMonitor: Any?
+  private var notificationObservers: [NSObjectProtocol] = []
 
   private var cancellables = Set<AnyCancellable>()
+
+  var hasKeyWindow: Bool {
+    (window?.isKeyWindow ?? false) || (cheatsheetWindow?.isKeyWindow ?? false)
+  }
 
   init(userState: UserState, userConfig: UserConfig) {
     self.userState = userState
@@ -54,6 +73,61 @@ class Controller {
       default: break
       }
     }.store(in: &cancellables)
+
+    cheatsheetWindow.delegate = cheatsheetWindowDelegate
+    cheatsheetWindowDelegate.controller = self
+
+    commandFMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) {
+      [weak self] event in
+      guard let self,
+        event.modifierFlags.contains(.command),
+        event.charactersIgnoringModifiers?.lowercased() == "f",
+        self.window.isKeyWindow || self.cheatsheetWindow.isKeyWindow
+      else {
+        return event
+      }
+      self.beginCheatsheetSearch()
+      return nil
+    }
+
+    let nc = NotificationCenter.default
+    notificationObservers.append(
+      nc.addObserver(
+        forName: .lkCheatsheetRunAction, object: nil, queue: .main
+      ) { [weak self] notification in
+        guard let self, let action = notification.object as? Action else { return }
+        self.hide {
+          self.runAction(action)
+        }
+      })
+    notificationObservers.append(
+      nc.addObserver(
+        forName: .lkCheatsheetNavigate, object: nil, queue: .main
+      ) { [weak self] notification in
+        guard let self, let group = notification.object as? Group else { return }
+        self.userState.display = group.key
+        self.userState.navigateToGroup(group)
+        self.window.makeKeyAndOrderFront(nil)
+        delay(1) {
+          self.positionCheatsheetWindow()
+        }
+      })
+    notificationObservers.append(
+      nc.addObserver(
+        forName: .lkCheatsheetEndSearch, object: nil, queue: .main
+      ) { [weak self] _ in
+        guard let self else { return }
+        self.window.makeKeyAndOrderFront(nil)
+      })
+  }
+
+  deinit {
+    if let commandFMonitor {
+      NSEvent.removeMonitor(commandFMonitor)
+    }
+    for observer in notificationObservers {
+      NotificationCenter.default.removeObserver(observer)
+    }
   }
 
   func show() {
@@ -278,6 +352,13 @@ class Controller {
     }
     positionCheatsheetWindow()
     cheatsheetWindow?.orderFront(nil)
+  }
+
+  private func beginCheatsheetSearch() {
+    guard window.hasCheatsheet else { return }
+    showCheatsheet()
+    cheatsheetWindow.makeKey()
+    NotificationCenter.default.post(name: .lkCheatsheetSearch, object: nil)
   }
 
   private func scheduleCheatsheet() {

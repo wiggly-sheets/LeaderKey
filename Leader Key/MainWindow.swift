@@ -3,6 +3,8 @@ import QuartzCore
 import SwiftUI
 
 class PanelWindow: NSPanel {
+  override var canBecomeKey: Bool { return true }
+
   init(contentRect: NSRect) {
     super.init(
       contentRect: contentRect,
@@ -40,7 +42,10 @@ class MainWindow: PanelWindow, NSWindowDelegate {
   }
 
   func windowDidResignKey(_ notification: Notification) {
-    controller.hide()
+    DispatchQueue.main.async {
+      guard !self.controller.hasKeyWindow, self.isVisible else { return }
+      self.controller.hide()
+    }
   }
 
   override func performKeyEquivalent(with event: NSEvent) -> Bool {
