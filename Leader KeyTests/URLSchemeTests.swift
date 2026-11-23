@@ -1,4 +1,5 @@
 import XCTest
+
 @testable import Leader_Key
 
 final class URLSchemeTests: XCTestCase {
@@ -81,6 +82,91 @@ final class URLSchemeTests: XCTestCase {
     let url = URL(string: "leaderkey://navigate")!
     let action = URLSchemeHandler.parse(url)
     XCTAssertEqual(action, .show)
+  }
+
+  // MARK: - Named Action Tests
+
+  func testRunWithName() {
+    let url = URL(string: "leaderkey://run?name=Reply%20with%20thanks")!
+    let action = URLSchemeHandler.parse(url)
+    XCTAssertEqual(action, .run(name: "Reply with thanks"))
+  }
+
+  func testRunTrimsName() {
+    let url = URL(string: "leaderkey://run?name=%20%20Reply%20%20")!
+    let action = URLSchemeHandler.parse(url)
+    XCTAssertEqual(action, .run(name: "Reply"))
+  }
+
+  func testRunWithoutNameFallsBackToShow() {
+    let url = URL(string: "leaderkey://run")!
+    let action = URLSchemeHandler.parse(url)
+    XCTAssertEqual(action, .show)
+  }
+
+  func testRunWithEmptyNameFallsBackToShow() {
+    let url = URL(string: "leaderkey://run?name=%20%20")!
+    let action = URLSchemeHandler.parse(url)
+    XCTAssertEqual(action, .show)
+  }
+
+  func testResolvesNestedUniqueLabel() {
+    let root = makeRoot()
+    let action = URLSchemeAction.run(name: "Nested").resolvedAction(
+      in: root, automationEnabled: true)
+
+    XCTAssertEqual(action?.key, "s")
+  }
+
+  func testRejectsDuplicateLabel() {
+    let root = makeRoot()
+    let action = URLSchemeAction.run(name: "Duplicate").resolvedAction(
+      in: root, automationEnabled: true)
+
+    XCTAssertNil(action)
+  }
+
+  func testRejectsMissingLabel() {
+    let root = makeRoot()
+    let action = URLSchemeAction.run(name: "Missing").resolvedAction(
+      in: root, automationEnabled: true)
+
+    XCTAssertNil(action)
+  }
+
+  func testRejectsGroupLabel() {
+    let root = makeRoot()
+    let action = URLSchemeAction.run(name: "Outer").resolvedAction(
+      in: root, automationEnabled: true)
+
+    XCTAssertNil(action)
+  }
+
+  func testAutomationGate() {
+    let root = makeRoot()
+    let action = URLSchemeAction.run(name: "Reply").resolvedAction(
+      in: root, automationEnabled: false)
+
+    XCTAssertNil(action)
+  }
+
+  private func makeRoot() -> Group {
+    Group(
+      key: nil,
+      label: "Root",
+      actions: [
+        .action(Action(key: "r", type: .command, label: "Reply", value: "echo reply")),
+        .group(
+          Group(
+            key: "o",
+            label: "Outer",
+            actions: [
+              .action(
+                Action(key: "s", type: .command, label: "Nested", value: "echo nested"))
+            ])),
+        .action(Action(key: "d", type: .command, label: "Duplicate", value: "echo one")),
+        .action(Action(key: "e", type: .command, label: "Duplicate", value: "echo two")),
+      ])
   }
 
   // MARK: - Invalid URL Tests

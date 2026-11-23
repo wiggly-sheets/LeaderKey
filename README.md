@@ -102,6 +102,13 @@ open "leaderkey://navigate?keys=a,b,c"
 open "leaderkey://navigate?keys=a,b,c&execute=false"
 ```
 
+#### Named Actions
+```bash
+# Run the action with this exact label. Requires "Allow URL scheme automation"
+# in Settings > Advanced. Duplicate or missing labels do nothing.
+open "leaderkey://run?name=Reply%20with%20thanks"
+```
+
 ### Example Use Cases
 
 - **Alfred/Raycast workflows**: Trigger Leader Key shortcuts programmatically

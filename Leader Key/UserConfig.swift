@@ -47,6 +47,14 @@ class UserConfig: ObservableObject {
     Events.send(.didReload)
   }
 
+  func firstAction(label: String) -> Action? {
+    root.firstAction(label: label)
+  }
+
+  func hasDuplicateActionLabel(_ label: String) -> Bool {
+    root.hasDuplicateActionLabel(label)
+  }
+
   func saveConfig() {
     // Check for file conflicts before saving
     if let lastChecksum = lastReadChecksum, exists {
@@ -608,6 +616,34 @@ struct Group: Item, Codable, Equatable {
     try c.encode(actions, forKey: .actions)
     if let l = label, !l.isEmpty { try c.encode(l, forKey: .label) }
     try c.encodeIfPresent(iconPath, forKey: .iconPath)
+  }
+}
+
+extension Group {
+  func firstAction(label: String) -> Action? {
+    matchingActions(label: label).first
+  }
+
+  func hasDuplicateActionLabel(_ label: String) -> Bool {
+    matchingActions(label: label).count > 1
+  }
+
+  private func matchingActions(label: String) -> [Action] {
+    var matches: [Action] = []
+
+    func walk(_ group: Group) {
+      for item in group.actions {
+        switch item {
+        case .action(let action):
+          if action.label == label { matches.append(action) }
+        case .group(let group):
+          walk(group)
+        }
+      }
+    }
+
+    walk(self)
+    return matches
   }
 }
 

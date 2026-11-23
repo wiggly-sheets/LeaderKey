@@ -250,6 +250,13 @@ class AppDelegate: NSObject, NSApplicationDelegate,
       guard Defaults[.urlSchemeAutomationEnabled] else { return }
       show()
       processKeys(keys, execute: execute)
+    case .run:
+      guard
+        let resolvedAction = action.resolvedAction(
+          in: config.root,
+          automationEnabled: Defaults[.urlSchemeAutomationEnabled])
+      else { return }
+      controller.runAction(resolvedAction)
     case .show:
       show()
     case .invalid:

@@ -301,7 +301,7 @@ class Controller {
     }
   }
 
-  private func runAction(_ action: Action) {
+  func runAction(_ action: Action) {
     switch action.type {
     case .application:
       NSWorkspace.shared.openApplication(
