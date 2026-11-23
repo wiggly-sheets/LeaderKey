@@ -116,7 +116,7 @@ enum Cheatsheet {
         }
 
         VStack(alignment: .leading, spacing: 2) {
-          Text(result.item.item.displayName)
+          Text(highlightedName)
             .lineLimit(1)
             .truncationMode(.middle)
 
@@ -143,12 +143,37 @@ enum Cheatsheet {
       .background(isSelected ? Color.accentColor.opacity(0.18) : Color.clear)
       .clipShape(RoundedRectangle(cornerRadius: 5))
     }
+
+    private var highlightedName: AttributedString {
+      let text = result.item.item.displayName
+      let ranges = FuzzyMatcher.originalRanges(
+        in: text, normalizedRanges: result.highlights)
+      guard !ranges.isEmpty else { return AttributedString(text) }
+
+      var highlighted = AttributedString()
+      var cursor = text.startIndex
+      for range in ranges {
+        if cursor < range.lowerBound {
+          highlighted.append(AttributedString(String(text[cursor..<range.lowerBound])))
+        }
+        var part = AttributedString(String(text[range]))
+        part.foregroundColor = .accentColor
+        part.underlineStyle = .single
+        highlighted.append(part)
+        cursor = range.upperBound
+      }
+      if cursor < text.endIndex {
+        highlighted.append(AttributedString(String(text[cursor...])))
+      }
+      return highlighted
+    }
   }
 
   struct CheatsheetView: SwiftUI.View {
     @EnvironmentObject var userState: UserState
     @State private var contentHeight: CGFloat = 0
     @State private var query = ""
+    @State private var debouncedQuery = ""
     @State private var isSearchActive = false
     @State private var selectedIndex = 0
     @State private var window: NSWindow?
@@ -178,7 +203,7 @@ enum Cheatsheet {
     }
 
     var searchResults: [CheatsheetSearch.Result] {
-      CheatsheetSearch.results(in: userState.userConfig.root, query: query)
+      CheatsheetSearch.results(in: userState.userConfig.root, query: debouncedQuery)
     }
 
     var body: some SwiftUI.View {
@@ -250,8 +275,17 @@ enum Cheatsheet {
       .onReceive(NotificationCenter.default.publisher(for: .lkCheatsheetSearch)) { _ in
         beginSearch()
       }
-      .onChange(of: query) { _ in
+      .onChange(of: query) { value in
         selectedIndex = 0
+        if value.count <= 1 || debouncedQuery.isEmpty {
+          debouncedQuery = value
+        }
+      }
+      .task(id: query) {
+        guard query.count > 1 else { return }
+        try? await Task.sleep(nanoseconds: 100_000_000)
+        guard !Task.isCancelled else { return }
+        debouncedQuery = query
       }
       .onChange(of: searchResults.count) { count in
         selectedIndex = min(selectedIndex, max(0, count - 1))
@@ -330,8 +364,9 @@ enum Cheatsheet {
     }
 
     private func activateSelected() {
-      guard !query.isEmpty, searchResults.indices.contains(selectedIndex) else { return }
-      activate(searchResults[selectedIndex])
+      let results = CheatsheetSearch.results(in: userState.userConfig.root, query: query)
+      guard !query.isEmpty, results.indices.contains(selectedIndex) else { return }
+      activate(results[selectedIndex])
     }
 
     private func activate(_ result: CheatsheetSearch.Result) {
