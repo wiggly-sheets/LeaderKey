@@ -1132,8 +1132,9 @@ private class GroupCellView: NSTableCellView, NSWindowDelegate {
     let hasValidKey = group.key != nil && !group.key!.isEmpty
 
     if isFirstLevel && hasValidKey, let key = group.key {
-      let recorder = KeyboardShortcuts.RecorderCocoa(for: KeyboardShortcuts.Name("group-\(key)")) {
-        _ in
+      let recorder = ShortcutRecorderView(
+        name: KeyboardShortcuts.Name("group-\(key)")
+      ) { _ in
         // Update the groupShortcuts set when shortcut changes
         let shortcutName = KeyboardShortcuts.Name("group-\(key)")
         if KeyboardShortcuts.getShortcut(for: shortcutName) != nil {

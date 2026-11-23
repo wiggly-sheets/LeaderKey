@@ -1,4 +1,7 @@
 import AppKit
+import Combine
+import Defaults
+import KeyboardShortcuts
 import SwiftUI
 
 typealias KeyChangedFn = ((_ before: String?, _ value: String?) -> Void)
@@ -126,6 +129,96 @@ struct KeyListenerView: NSViewRepresentable {
       return super.resignFirstResponder()
     }
   }
+}
+
+@MainActor
+enum ShortcutDisplay {
+  static func text(
+    for shortcut: KeyboardShortcuts.Shortcut?,
+    showHyperKeySymbol: Bool
+  ) -> String {
+    guard let shortcut else { return "" }
+
+    let text = shortcut.description
+    guard showHyperKeySymbol,
+      shortcut.modifiers.contains([.control, .option, .shift, .command])
+    else { return text }
+
+    let key =
+      text
+      .replacingOccurrences(of: "⌃", with: "")
+      .replacingOccurrences(of: "⌥", with: "")
+      .replacingOccurrences(of: "⇧", with: "")
+      .replacingOccurrences(of: "⌘", with: "")
+    guard !key.isEmpty else { return text }
+
+    let keyText = key.count == 1 ? key.lowercased() : key
+    return "✦ + \(keyText)"
+  }
+
+  static func text(for shortcut: KeyboardShortcuts.Shortcut?) -> String {
+    text(for: shortcut, showHyperKeySymbol: Defaults[.showHyperKeySymbol])
+  }
+}
+
+final class ShortcutRecorderView: NSView {
+  private let name: KeyboardShortcuts.Name
+  private var recorder: KeyboardShortcuts.RecorderCocoa!
+  private var displayCancellable: AnyCancellable?
+
+  init(
+    name: KeyboardShortcuts.Name,
+    onChange: ((KeyboardShortcuts.Shortcut?) -> Void)? = nil
+  ) {
+    self.name = name
+    super.init(frame: .zero)
+
+    recorder = KeyboardShortcuts.RecorderCocoa(for: name) { [weak self] shortcut in
+      onChange?(shortcut)
+      self?.refreshDisplay()
+    }
+    recorder.translatesAutoresizingMaskIntoConstraints = false
+    addSubview(recorder)
+    NSLayoutConstraint.activate([
+      recorder.leadingAnchor.constraint(equalTo: leadingAnchor),
+      recorder.trailingAnchor.constraint(equalTo: trailingAnchor),
+      recorder.topAnchor.constraint(equalTo: topAnchor),
+      recorder.bottomAnchor.constraint(equalTo: bottomAnchor),
+    ])
+
+    displayCancellable = Defaults.publisher(.showHyperKeySymbol).sink { [weak self] _ in
+      self?.refreshDisplay()
+    }
+    refreshDisplay()
+  }
+
+  @available(*, unavailable)
+  required init?(coder: NSCoder) {
+    fatalError("init(coder:) has not been implemented")
+  }
+
+  override var intrinsicContentSize: NSSize {
+    recorder.intrinsicContentSize
+  }
+
+  private func refreshDisplay() {
+    DispatchQueue.main.async { [weak self] in
+      guard let self else { return }
+      self.recorder.stringValue = ShortcutDisplay.text(
+        for: KeyboardShortcuts.getShortcut(for: self.name))
+    }
+  }
+}
+
+struct ShortcutRecorder: NSViewRepresentable {
+  let name: KeyboardShortcuts.Name
+  var onChange: ((KeyboardShortcuts.Shortcut?) -> Void)? = nil
+
+  func makeNSView(context: Context) -> ShortcutRecorderView {
+    ShortcutRecorderView(name: name, onChange: onChange)
+  }
+
+  func updateNSView(_ nsView: ShortcutRecorderView, context: Context) {}
 }
 
 #Preview {

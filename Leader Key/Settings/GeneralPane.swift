@@ -1,5 +1,4 @@
 import Defaults
-import KeyboardShortcuts
 import LaunchAtLogin
 import Settings
 import SwiftUI
@@ -87,7 +86,11 @@ struct GeneralPane: View {
       }
 
       Settings.Section(title: "Shortcut") {
-        KeyboardShortcuts.Recorder(for: .activate)
+        VStack(alignment: .leading, spacing: 8) {
+          ShortcutRecorder(name: .activate)
+          Defaults.Toggle(
+            "Show hyper key as ✦", key: .showHyperKeySymbol)
+        }
       }
 
       Settings.Section(title: "Theme") {

@@ -43,6 +43,8 @@ extension Defaults.Keys {
   static let groupShortcuts = Key<Set<String>>(
     "groupShortcuts",
     default: Set(), suite: defaultsSuite)
+  static let showHyperKeySymbol = Key<Bool>(
+    "showHyperKeySymbol", default: false, suite: defaultsSuite)
 }
 
 enum BackgroundStyle: String, Defaults.Serializable, CaseIterable, Identifiable {

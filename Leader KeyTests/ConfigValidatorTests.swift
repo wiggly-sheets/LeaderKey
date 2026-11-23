@@ -1,3 +1,4 @@
+import KeyboardShortcuts
 import XCTest
 
 @testable import Leader_Key
@@ -234,5 +235,35 @@ final class ConfigValidatorTests: XCTestCase {
         "Input '\(testCase.input)' vs config '\(testCase.config)' should \(testCase.shouldMatch ? "match" : "not match")"
       )
     }
+  }
+}
+
+@MainActor
+final class ShortcutDisplayTests: XCTestCase {
+  func testHyperShortcutUsesSymbolWhenEnabled() {
+    let shortcut = KeyboardShortcuts.Shortcut(
+      .b, modifiers: [.control, .option, .shift, .command])
+
+    XCTAssertEqual(
+      ShortcutDisplay.text(for: shortcut, showHyperKeySymbol: true),
+      "✦ + b")
+  }
+
+  func testHyperShortcutKeepsGlyphsWhenDisabled() {
+    let shortcut = KeyboardShortcuts.Shortcut(
+      .b, modifiers: [.control, .option, .shift, .command])
+
+    XCTAssertEqual(
+      ShortcutDisplay.text(for: shortcut, showHyperKeySymbol: false),
+      shortcut.description)
+  }
+
+  func testPartialModifiersKeepGlyphs() {
+    let shortcut = KeyboardShortcuts.Shortcut(
+      .b, modifiers: [.control, .command])
+
+    XCTAssertEqual(
+      ShortcutDisplay.text(for: shortcut, showHyperKeySymbol: true),
+      shortcut.description)
   }
 }
