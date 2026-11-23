@@ -14,6 +14,7 @@ Do not build or run the app unless the user asks.
 - Build and run: `xcodebuild -scheme "Leader Key" -configuration Debug build`
 - Run all tests: `xcodebuild -scheme "Leader Key" -testPlan "TestPlan" test`
 - Run single test: `xcodebuild -scheme "Leader Key" -testPlan "TestPlan" -only-testing:Leader KeyTests/UserConfigTests/testInitializesWithDefaults test`
+- Release builds must be universal: use `-destination 'generic/platform=macOS' ARCHS='arm64 x86_64' ONLY_ACTIVE_ARCH=NO`
 - Bump version: `bin/bump`
 - Create release: `bin/release`
 

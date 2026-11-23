@@ -57,7 +57,7 @@ Download the latest `LeaderKey-<version>.dmg`, open it, and drag Leader Key to A
 
 This fork is ad-hoc signed and not notarized, so macOS may block the first launch. If that happens,
 open it through System Settings > Privacy & Security or right-click the app and choose Open. Release
-builds are Apple silicon only and require macOS 14.4 or later.
+builds are universal (Apple silicon and Intel) and require macOS 14.4 or later.
 
 ### Build from source
 
