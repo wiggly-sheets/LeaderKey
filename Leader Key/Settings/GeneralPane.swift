@@ -9,7 +9,7 @@ struct GeneralPane: View {
   @Default(.configDir) var configDir
   @Default(.theme) var theme
   @Default(.backgroundStyle) var backgroundStyle
-  @Default(.glassTint) var glassTint
+  @Default(.glassTintColor) var glassTintColor
 
   var body: some View {
     Settings.Container(contentWidth: contentWidth) {
@@ -100,19 +100,32 @@ struct GeneralPane: View {
             Text(Theme.name(value)).tag(value)
           }
         }.frame(maxWidth: 170).labelsHidden()
+      }
 
-        Picker("Background", selection: $backgroundStyle) {
+      Settings.Section(title: "Material") {
+        Picker("Material", selection: $backgroundStyle) {
           ForEach(BackgroundStyle.allCases.filter(\.isAvailable), id: \.self) { value in
             Text(value.description).tag(value)
           }
         }.frame(maxWidth: 170).labelsHidden()
+      }
 
+      Settings.Section(title: "Tint") {
         if #available(macOS 26.0, *), backgroundStyle != .classic {
-          Picker("Tint", selection: $glassTint) {
-            ForEach(GlassTint.allCases, id: \.self) { value in
-              Text(value.description).tag(value)
+          HStack(spacing: 8) {
+            ColorPicker(
+              "Tint color", selection: $glassTintColor, supportsOpacity: true
+            )
+            .labelsHidden()
+
+            Button("None") {
+              glassTintColor = .clear
             }
-          }.frame(maxWidth: 170).labelsHidden()
+            .buttonStyle(.link)
+          }
+        } else {
+          Text("Requires Liquid Glass")
+            .foregroundStyle(.secondary)
         }
       }
 

@@ -240,38 +240,39 @@ leaderkey://run?name=Reply%20with%20thanks
 
 ## 5. Liquid Glass Tint
 
-**Goal:** let users tint Liquid Glass backgrounds without a full color picker.
+**Goal:** let users tint Liquid Glass backgrounds with the native macOS color picker.
 
 **Setting**
 
-- New `Defaults.Keys.glassTint` of type `GlassTint`, default `.none`.
-- `GlassTint` cases: `none`, `blue`, `purple`, `green`, `pink`, `orange`. Raw string values.
-- Only visible in Settings when Background is `Liquid Glass` or `Liquid Glass Clear` and macOS 26+ is available.
+- `Defaults.Keys.glassTintColor` of type `Color`, default `.clear`.
+- `.clear` means no tint.
+- The control is shown in Settings when Background is `Liquid Glass` or `Liquid Glass Clear`
+  and macOS 26+ is available.
+- On Classic Blur or older macOS, the row explains that Liquid Glass is required.
 
 **Rendering**
 
 - In `ThemeBackground`, pass a `Color?` to `Glass.tint(_:)`.
-- `.none` passes nil.
+- `.clear` passes nil.
 - Classic Blur ignores the setting completely.
-- Tint applies to both glass styles. No opacity control in this version; the system controls glass intensity.
+- Tint applies to both glass styles. Opacity is part of the native color picker.
 
 **UI**
 
-- Add a Tint picker below the Background picker in `GeneralPane`.
-- Hide the picker for Classic Blur.
-- Use plain names, no custom color well.
+- Separate Theme, Material, and Tint sections in `GeneralPane`.
+- Use the native SwiftUI `ColorPicker` with opacity enabled.
+- Add a None button that resets the tint to `.clear`.
 
 **Tests**
 
-- Enum raw values and default.
-- `GlassTint.color` mapping returns nil only for `.none`.
+- Tint color defaults to clear.
 - Existing background style tests keep passing.
 
 **Acceptance**
 
 - Tint changes apply live while a theme window is visible.
 - Setting persists across launches.
-- macOS 14 and 15 builds compile and fall back to Classic Blur with no tint UI.
+- macOS 14 and 15 builds compile and fall back to Classic Blur with no tint controls.
 
 **Effort:** S. **Risk:** low.
 

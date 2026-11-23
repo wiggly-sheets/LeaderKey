@@ -30,8 +30,8 @@ contact the original update feed.
 - **Fuzzy cheatsheet search** — when an exact match is not enough, results are ranked with fuzzy
   matching. Exact and substring matches stay first, and matched characters in the item name are
   highlighted.
-- **Liquid Glass tint** — on macOS 26 and later, choose a tint for Liquid Glass backgrounds in
-  Settings > General.
+- **Liquid Glass tint** — on macOS 26 and later, choose any tint color with the native color
+  picker in Settings > General.
 - **Updates disabled** — this fork does not check the original appcast and has no automatic update
   feed yet. See [docs/sparkle-updates.md](docs/sparkle-updates.md).
 
