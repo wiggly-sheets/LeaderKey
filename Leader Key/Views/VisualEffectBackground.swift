@@ -21,16 +21,30 @@ struct VisualEffectView: NSViewRepresentable {
   }
 }
 
+extension GlassTint {
+  var color: Color? {
+    switch self {
+    case .none: return nil
+    case .blue: return .blue
+    case .purple: return .purple
+    case .green: return .green
+    case .pink: return .pink
+    case .orange: return .orange
+    }
+  }
+}
+
 /// Theme background that follows the user's background style setting.
 struct ThemeBackground: View {
   @Default(.backgroundStyle) var style
+  @Default(.glassTint) var tint
   var cornerRadius: CGFloat = 15
 
   var body: some View {
     let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
     if #available(macOS 26.0, *), style != .classic {
-      Color.clear
-        .glassEffect(style == .glassClear ? .clear : .regular, in: shape)
+      let glass = (style == .glassClear ? Glass.clear : Glass.regular).tint(tint.color)
+      Color.clear.glassEffect(glass, in: shape)
     } else {
       VisualEffectView(material: .hudWindow, blendingMode: .behindWindow)
     }

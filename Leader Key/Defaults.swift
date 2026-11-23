@@ -19,6 +19,8 @@ extension Defaults.Keys {
     "theme", default: .mysteryBox, suite: defaultsSuite)
   static let backgroundStyle = Key<BackgroundStyle>(
     "backgroundStyle", default: .classic, suite: defaultsSuite)
+  static let glassTint = Key<GlassTint>(
+    "glassTint", default: .none, suite: defaultsSuite)
   static let urlSchemeAutomationEnabled = Key<Bool>(
     "urlSchemeAutomationEnabled", default: false, suite: defaultsSuite)
 
@@ -67,6 +69,18 @@ enum BackgroundStyle: String, Defaults.Serializable, CaseIterable, Identifiable 
     if #available(macOS 26.0, *) { return true }
     return false
   }
+}
+
+enum GlassTint: String, Defaults.Serializable, CaseIterable, Identifiable {
+  case none
+  case blue
+  case purple
+  case green
+  case pink
+  case orange
+
+  var id: Self { self }
+  var description: String { rawValue.capitalized }
 }
 
 enum AutoOpenCheatsheetSetting: String, Defaults.Serializable {

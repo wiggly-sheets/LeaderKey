@@ -9,6 +9,7 @@ struct GeneralPane: View {
   @Default(.configDir) var configDir
   @Default(.theme) var theme
   @Default(.backgroundStyle) var backgroundStyle
+  @Default(.glassTint) var glassTint
 
   var body: some View {
     Settings.Container(contentWidth: contentWidth) {
@@ -105,6 +106,14 @@ struct GeneralPane: View {
             Text(value.description).tag(value)
           }
         }.frame(maxWidth: 170).labelsHidden()
+
+        if #available(macOS 26.0, *), backgroundStyle != .classic {
+          Picker("Tint", selection: $glassTint) {
+            ForEach(GlassTint.allCases, id: \.self) { value in
+              Text(value.description).tag(value)
+            }
+          }.frame(maxWidth: 170).labelsHidden()
+        }
       }
 
       Settings.Section(title: "App") {
