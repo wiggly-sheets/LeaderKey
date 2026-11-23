@@ -1,7 +1,48 @@
 import Cocoa
 
 class CommandRunner {
+  static let clipboardLimit = 1_048_576
+
+  static func prepare(command: String, clipboard: String) -> String? {
+    let clipboard = clipboard.replacingOccurrences(of: "\0", with: "")
+    let placeholder = "{{clipboard}}"
+    let escapedPlaceholder = "\\{{clipboard}}"
+    let quotedClipboard = "'" + clipboard.replacingOccurrences(of: "'", with: "'\\''") + "'"
+
+    var result = ""
+    result.reserveCapacity(command.count)
+    var index = command.startIndex
+
+    while index < command.endIndex {
+      if command[index...].hasPrefix(escapedPlaceholder) {
+        result += placeholder
+        index = command.index(index, offsetBy: escapedPlaceholder.count)
+      } else if command[index...].hasPrefix(placeholder) {
+        guard clipboard.utf8.count <= clipboardLimit else { return nil }
+        result += quotedClipboard
+        index = command.index(index, offsetBy: placeholder.count)
+      } else {
+        result.append(command[index])
+        index = command.index(after: index)
+      }
+    }
+
+    return result
+  }
+
   static func run(_ command: String) {
+    let clipboard = NSPasteboard.general.string(forType: .string) ?? ""
+    guard let command = prepare(command: command, clipboard: clipboard) else {
+      DispatchQueue.main.async {
+        let alert = NSAlert()
+        alert.alertStyle = .warning
+        alert.messageText = "Clipboard too large"
+        alert.informativeText = "Clipboard text exceeds the 1 MiB limit. Shorten it and try again."
+        alert.runModal()
+      }
+      return
+    }
+
     DispatchQueue.global(qos: .userInitiated).async {
       let task = Process()
       let pipe = Pipe()
