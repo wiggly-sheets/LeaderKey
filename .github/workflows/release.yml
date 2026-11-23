@@ -1,0 +1,184 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: macos-15
+
+    steps:
+      - uses: actions/checkout@v4
+      - run: brew install swift-format
+      - run: swift-format lint --recursive .
+      - run: |
+          xcodebuild test \
+            -project "Leader Key.xcodeproj" \
+            -scheme "Leader Key" \
+            -destination "platform=macOS" \
+            -testPlan "TestPlan" \
+            -skipPackagePluginValidation \
+            -skipMacroValidation \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO
+
+  package:
+    needs: verify
+    runs-on: macos-15
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve and validate version
+        run: |
+          set -euo pipefail
+          if [[ ! "${GITHUB_REF_NAME}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$ ]]; then
+            echo "Tag ${GITHUB_REF_NAME} is not a release tag" >&2
+            exit 1
+          fi
+          echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
+
+      - name: Assert tag is on the default branch
+        run: |
+          set -euo pipefail
+          default_branch="$(git ls-remote --symref origin HEAD | awk '/^ref:/ { print $2 }' | sed 's|^refs/heads/||')"
+          git fetch --no-tags origin "$default_branch"
+          git merge-base --is-ancestor "$GITHUB_SHA" FETCH_HEAD
+
+      - name: Build app bundles
+        run: |
+          set -euo pipefail
+          for arch in arm64 x86_64; do
+            xcodebuild build \
+              -project "Leader Key.xcodeproj" \
+              -scheme "Leader Key" \
+              -configuration Release \
+              -destination "generic/platform=macOS" \
+              -derivedDataPath "$RUNNER_TEMP/build-$arch" \
+              -skipPackagePluginValidation \
+              -skipMacroValidation \
+              ARCHS="$arch" \
+              ONLY_ACTIVE_ARCH=NO \
+              CODE_SIGN_IDENTITY="" \
+              CODE_SIGNING_REQUIRED=NO
+            built="$RUNNER_TEMP/build-$arch/Build/Products/Release/Leader Key.app"
+            test "$(lipo -archs "$built/Contents/MacOS/Leader Key")" = "$arch"
+            built_version="$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$built/Contents/Info.plist")"
+            test "$built_version" = "$VERSION"
+            mkdir -p "$RUNNER_TEMP/export-$arch"
+            ditto "$built" "$RUNNER_TEMP/export-$arch/Leader Key.app"
+          done
+
+      - name: Sign app bundles
+        run: |
+          set -euo pipefail
+          for arch in arm64 x86_64; do
+            app="$RUNNER_TEMP/export-$arch/Leader Key.app"
+            codesign --force --deep --sign - "$app"
+            codesign --verify --deep --strict --verbose=2 "$app"
+          done
+
+      - name: Install create-dmg
+        run: brew install create-dmg
+
+      - name: Build disk images
+        run: |
+          set -euo pipefail
+          mkdir -p release
+          for arch in arm64 x86_64; do
+            create-dmg \
+              --volname "Leader Key" \
+              --window-pos 200 120 \
+              --window-size 540 380 \
+              --icon-size 128 \
+              --icon "Leader Key.app" 150 190 \
+              --hide-extension "Leader Key.app" \
+              --app-drop-link 390 190 \
+              --no-internet-enable \
+              "release/LeaderKey-$VERSION-$arch.dmg" \
+              "$RUNNER_TEMP/export-$arch"
+          done
+
+      - name: Verify disk images
+        run: |
+          set -euo pipefail
+          for arch in arm64 x86_64; do
+            dmg="release/LeaderKey-$VERSION-$arch.dmg"
+            mountpoint="$(mktemp -d)"
+            hdiutil attach -nobrowse -readonly -mountpoint "$mountpoint" "$dmg" > /dev/null
+            test "$(lipo -archs "$mountpoint/Leader Key.app/Contents/MacOS/Leader Key")" = "$arch"
+            test -L "$mountpoint/Applications"
+            codesign --verify --deep --strict "$mountpoint/Leader Key.app"
+            hdiutil detach "$mountpoint" > /dev/null
+            rmdir "$mountpoint"
+          done
+
+      - name: Write checksums
+        run: |
+          set -euo pipefail
+          cd release
+          shasum -a 256 "LeaderKey-$VERSION-arm64.dmg" "LeaderKey-$VERSION-x86_64.dmg" > checksums.txt
+          shasum -a 256 -c checksums.txt
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release
+          path: release/
+          if-no-files-found: error
+
+  release:
+    needs: package
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Resolve version
+        run: echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: release
+          path: release
+
+      - name: Compose release body
+        run: |
+          set -euo pipefail
+          {
+            cat <<'EOF'
+          Ad-hoc signed builds. They are not notarized, so macOS may block the first launch.
+          Open the app from System Settings > Privacy & Security, or right-click it and choose Open.
+
+          EOF
+            printf -- '- LeaderKey-%s-arm64.dmg — Apple silicon\n' "$VERSION"
+            printf -- '- LeaderKey-%s-x86_64.dmg — Intel\n\n' "$VERSION"
+            cat <<'EOF'
+          ## Checksums
+
+          ```
+          EOF
+            cat release/checksums.txt
+            cat <<'EOF'
+          ```
+
+          Verify with `shasum -a 256 -c checksums.txt`.
+          EOF
+          } > body.md
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          name: Leader Key ${{ env.VERSION }}
+          body_path: body.md
+          generate_release_notes: true
+          prerelease: ${{ contains(github.ref_name, '-') }}
+          fail_on_unmatched_files: true
+          files: |
+            release/LeaderKey-${{ env.VERSION }}-arm64.dmg
+            release/LeaderKey-${{ env.VERSION }}-x86_64.dmg
+            release/checksums.txt

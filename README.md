@@ -53,11 +53,17 @@ brew install --cask leader-key
 
 ### Direct download
 
-Download the latest `LeaderKey-<version>.dmg`, open it, and drag Leader Key to Applications.
+Download the disk image for your Mac, open it, and drag Leader Key to Applications:
+
+- `LeaderKey-<version>-arm64.dmg` for Apple silicon
+- `LeaderKey-<version>-x86_64.dmg` for Intel
+
+Each release ships one disk image per architecture, plus a `checksums.txt` file. Verify a download
+with `shasum -a 256 -c checksums.txt`.
 
 This fork is ad-hoc signed and not notarized, so macOS may block the first launch. If that happens,
 open it through System Settings > Privacy & Security or right-click the app and choose Open. Release
-builds are universal (Apple silicon and Intel) and require macOS 14.4 or later.
+builds require macOS 14.4 or later.
 
 ### Build from source
 
