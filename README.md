@@ -38,14 +38,33 @@ contact the original update feed.
 The original upstream project has its own features, releases, and support channels. This fork does
 not speak for it.
 
-## Install from source
+## Install
 
-This fork has no binary releases or Homebrew formula yet. Build it locally:
+Releases are published on [GitHub](https://github.com/wiggly-sheets/LeaderKey/releases) and through
+the Wiggly Sheets Homebrew tap.
+
+### Homebrew
+
+```sh
+brew tap wiggly-sheets/homebrew-tap
+brew trust wiggly-sheets/homebrew-tap
+brew install --cask leader-key
+```
+
+### Direct download
+
+Download the latest `LeaderKey-<version>.dmg`, open it, and drag Leader Key to Applications.
+
+This fork is ad-hoc signed and not notarized, so macOS may block the first launch. If that happens,
+open it through System Settings > Privacy & Security or right-click the app and choose Open. Release
+builds are Apple silicon only and require macOS 14.4 or later.
+
+### Build from source
 
 ```sh
 git clone https://github.com/wiggly-sheets/LeaderKey.git
 cd LeaderKey
-xcodebuild -scheme "Leader Key" -configuration Release -derivedDataPath build build
+xcodebuild -scheme "Leader Key" -configuration Release -derivedDataPath build -skipPackagePluginValidation build
 cp -R "build/Build/Products/Release/Leader Key.app" /Applications/
 open "/Applications/Leader Key.app"
 ```
