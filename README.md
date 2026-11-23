@@ -213,4 +213,4 @@ Leader Key was created by Mikkel Malmberg. The upstream project is
 claim affiliation with or endorsement from the upstream project.
 
 MIT License. Original code Copyright (c) 2024 Mikkel Malmberg. Fork modifications Copyright (c) 2026
-Zeb Mikula. See [LICENSE](LICENSE).
+Wiggly-Sheets. See [LICENSE](LICENSE).
