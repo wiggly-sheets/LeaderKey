@@ -49,11 +49,11 @@ class URLSchemeHandler {
     case "run":
       guard let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
         let queryItems = components.queryItems,
-        let name = queryItems.first(where: { $0.name == "name" })?.value
+        let rawName = queryItems.first(where: { $0.name == "name" })?.value
       else {
         return .show
       }
-      let name = name.trimmingCharacters(in: .whitespacesAndNewlines)
+      let name = rawName.trimmingCharacters(in: .whitespacesAndNewlines)
       return name.isEmpty ? .show : .run(name: name)
     default:
       return .show
